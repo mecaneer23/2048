@@ -7,15 +7,14 @@ import random
 def main():
     def move(direction):
         direction = direction.keycode
-        if direction in (38, 87):
+        if direction in (38, 87, 111):
             direction = "up"
-        elif direction in (40, 83):
+        elif direction in (40, 83, 116):
             direction = "down"
-        elif direction in (37, 65):
+        elif direction in (37, 65, 113):
             direction = "left"
-        elif direction in (39, 68):
+        elif direction in (39, 68, 114):
             direction = "right"
-        print(direction)
         spawn_random()
         compress(direction)
         merge(direction)
@@ -132,9 +131,11 @@ def main():
                 if vars[i][j].get() == 2048:
                     print("You win!")
                     root.destroy()
+                    exit()
         if all(vars[i][j].get() for i in range(4) for j in range(4)):
             print("You lose!")
             root.destroy()
+            exit()
 
     def color_board():
         for i in range(4):
