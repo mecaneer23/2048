@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from tkinter import Tk, ttk, StringVar
+from tkinter import Tk, ttk, StringVar, messagebox
 import random
 
 
@@ -19,8 +19,16 @@ def main():
         compress(direction)
         merge(direction)
         compress(direction)
-        check_win()
         color_board()
+        message = check_win()
+        if message != "continue":
+            if messagebox.askyesno(title=message, message="Do you want to play again?"):
+                for i in range(4):
+                    for j in range(4):
+                        vars[i][j].set("")
+            else:
+                root.destroy()
+                exit()
 
     root = Tk()
     root.title("2048")
@@ -32,6 +40,7 @@ def main():
     root.bind("s", move)
     root.bind("a", move)
     root.bind("d", move)
+    root.bind("m", lambda x: vars[0][0].set("2048"))
 
     vars = [[StringVar(root) for _ in range(4)] for _ in range(4)]
     ttk.Style().configure(
@@ -128,44 +137,32 @@ def main():
     def check_win():
         for i in range(4):
             for j in range(4):
-                if vars[i][j].get() == 2048:
-                    print("You win!")
-                    root.destroy()
-                    exit()
+                if vars[i][j].get() == "2048":
+                    return "You win!"
         if all(vars[i][j].get() for i in range(4) for j in range(4)):
-            print("You lose!")
-            root.destroy()
-            exit()
+            return "You lose!"
+        return "continue"
 
     def color_board():
         for i in range(4):
             for j in range(4):
-                if vars[i][j].get() == "":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#ffffff", foreground="#000000")
-                elif vars[i][j].get() == "2":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#eee4da", foreground="#000000")
-                elif vars[i][j].get() == "4":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#ede0c8", foreground="#000000")
-                elif vars[i][j].get() == "8":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#f2b179", foreground="#000000")
-                elif vars[i][j].get() == "16":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#f59563", foreground="#000000")
-                elif vars[i][j].get() == "32":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#f67c5f", foreground="#000000")
-                elif vars[i][j].get() == "64":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#f65e3b", foreground="#000000")
-                elif vars[i][j].get() == "128":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#edcf72", foreground="#000000")
-                elif vars[i][j].get() == "256":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#edcc61", foreground="#000000")
-                elif vars[i][j].get() == "512":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#edc850", foreground="#000000")
-                elif vars[i][j].get() == "1024":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#edc53f", foreground="#000000")
-                elif vars[i][j].get() == "2048":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#edc22e", foreground="#000000")
-                elif vars[i][j].get() == "4096":
-                    ttk.Style().configure(f"{i}{j}.TLabel", background="#000000", foreground="#ffffff")
+                ttk.Style().configure(
+                    f"{i}{j}.TLabel",
+                    background={
+                        "": "#ffffff",
+                        "2": "#eee4da",
+                        "4": "#ede0c8",
+                        "8": "#f2b179",
+                        "16": "#f59563",
+                        "32": "#f67c5f",
+                        "64": "#f65e3b",
+                        "128": "#edcf72",
+                        "256": "#edcc61",
+                        "512": "#edc850",
+                        "1024": "#edc53f",
+                        "2048": "#edc22e"
+                    }[vars[i][j].get()],
+                    foreground="#000000")
 
     spawn_random()
     spawn_random()
