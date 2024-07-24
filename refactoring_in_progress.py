@@ -46,8 +46,8 @@ class Game:
             if direction in ("up", "left")
             else range(self._BOARD_SIZE - 1)
         )
-        for j in range(self._BOARD_SIZE):
-            for i in range_obj:
+        for i in range(self._BOARD_SIZE):
+            for j in range_obj:
                 if (
                     self._board[i][j].get() != ""
                     and self._board[i + i_addend][j + j_addend].get() == ""
@@ -88,6 +88,7 @@ class Game:
 
     def _move(self, key: Event) -> None:
         key_symbol = key.keysym
+        direction = ""
         if key_symbol in ("Up", "w"):
             direction = "up"
         elif key_symbol in ("Down", "s"):
@@ -96,10 +97,12 @@ class Game:
             direction = "left"
         elif key_symbol in ("Right", "d"):
             direction = "right"
-        self._spawn_random()
+        if direction == "":
+            return
         self._compress(direction)
         self._merge(direction)
         self._compress(direction)
+        self._spawn_random()
         self._color_board()
         message = self._check_win()
         if message == "continue":
@@ -127,6 +130,14 @@ class Game:
         self._root.bind("a", self._move)
         self._root.bind("d", self._move)
         self._root.bind("q", self._end_win)
+        ttk.Style().configure(
+            "TLabel",
+            font=("Helvetica", 64),
+            width=3,
+            height=3,
+            borderwidth=1,
+            relief="ridge",
+        )
 
     def __init__(self) -> None:
         self._root = Tk()
@@ -140,6 +151,7 @@ class Game:
                     self._root,
                     textvariable=self._board[i][j],
                     padding=5,
+                    style=f"{i}{j}.TLabel",
                 ).grid(
                     row=i,
                     column=j,
