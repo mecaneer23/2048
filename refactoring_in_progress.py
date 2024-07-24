@@ -69,57 +69,32 @@ class Game:
 
     def _merge(self, direction: str) -> None:
         i_addend, j_addend = self._get_addends(direction)
-        j_addend = - j_addend
-        if direction == "up":
-            for j in range(4):
-                for i in range(3):
-                    if (
-                        self._board[i][j].get() != ""
-                        and self._board[i + 1][j].get() != ""
-                        and self._board[i][j].get() == self._board[i + 1][j].get()
-                    ):
-                        self._board[i][j].set(int(self._board[i][j].get()) * 2)
-                        self._board[i + 1][j].set("")
-        elif direction == "down":
-            for j in range(4):
-                for i in range(3, 0, -1):
-                    if (
-                        self._board[i][j].get() != ""
-                        and self._board[i - 1][j].get() != ""
-                        and self._board[i][j].get() == self._board[i - 1][j].get()
-                    ):
-                        self._board[i][j].set(int(self._board[i][j].get()) * 2)
-                        self._board[i - 1][j].set("")
-        elif direction == "left":
-            for i in range(4):
-                for j in range(3):
-                    if (
-                        self._board[i][j].get() != ""
-                        and self._board[i][j + 1].get() != ""
-                        and self._board[i][j].get() == self._board[i][j + 1].get()
-                    ):
-                        self._board[i][j].set(int(self._board[i][j].get()) * 2)
-                        self._board[i][j + 1].set("")
-        elif direction == "right":
-            for i in range(4):
-                for j in range(3, 0, -1):
-                    if (
-                        self._board[i][j].get() != ""
-                        and self._board[i][j - 1].get() != ""
-                        and self._board[i][j].get() == self._board[i][j - 1].get()
-                    ):
-                        self._board[i][j].set(int(self._board[i][j].get()) * 2)
-                        self._board[i][j - 1].set("")
+        j_addend = -j_addend
+        range_obj = (
+            range(self._BOARD_SIZE - 1, 0, -1)
+            if direction in ("down", "right")
+            else range(self._BOARD_SIZE - 1)
+        )
+        for i in range(self._BOARD_SIZE):
+            for j in range_obj:
+                if (
+                    self._board[i][j].get() != ""
+                    and self._board[i + i_addend][j + j_addend].get() != ""
+                    and self._board[i][j].get()
+                    == self._board[i + i_addend][j + j_addend].get()
+                ):
+                    self._board[i][j].set(str(int(self._board[i][j].get()) * 2))
+                    self._board[i + i_addend][j + j_addend].set("")
 
-    def _move(self, direction: Event) -> None:
-        direction = direction.keycode
-        if direction in (38, 87, 111):
+    def _move(self, key: Event) -> None:
+        key_symbol = key.keysym
+        if key_symbol in ("Up", "w"):
             direction = "up"
-        elif direction in (40, 83, 116):
+        elif key_symbol in ("Down", "s"):
             direction = "down"
-        elif direction in (37, 65, 113):
+        elif key_symbol in ("Left", "a"):
             direction = "left"
-        elif direction in (39, 68, 114):
+        elif key_symbol in ("Right", "d"):
             direction = "right"
         self._spawn_random()
         self._compress(direction)
@@ -138,6 +113,9 @@ class Game:
         # TODO: is this line necessary?
         # exit()
 
+    def _end_win(self, _) -> None:
+        self._root.destroy()
+
     def _init_tk(self) -> None:
         self._root.title("2048")
         self._root.bind("<Up>", self._move)
@@ -148,10 +126,11 @@ class Game:
         self._root.bind("s", self._move)
         self._root.bind("a", self._move)
         self._root.bind("d", self._move)
-        self._root.bind("q", self._root.destroy)
+        self._root.bind("q", self._end_win)
 
     def __init__(self) -> None:
         self._root = Tk()
+        self._init_tk()
         self._board: list[list[StringVar]] = []
         for i in range(self._BOARD_SIZE):
             self._board.append([])
