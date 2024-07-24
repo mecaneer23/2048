@@ -25,29 +25,33 @@ class Game:
     }
     _FG_COLOR = "#000000"
 
-    @staticmethod
-    def _get_addends(direction: str) -> tuple[int, int]:
-        return {
+    def _compress(self, direction: str) -> None:
+        i_addend = {
             "down": 1,
             "up": -1,
             "left": 0,
             "right": 0,
-        }[direction], {
+        }[direction]
+        j_addend = {
             "down": 0,
             "up": 0,
             "left": -1,
             "right": 1,
         }[direction]
-
-    def _compress(self, direction: str) -> None:
-        i_addend, j_addend = self._get_addends(direction)
-        range_obj = (
-            range(self._BOARD_SIZE - 1, 0, -1)
-            if direction in ("up", "left")
-            else range(self._BOARD_SIZE - 1)
-        )
-        for i in range(self._BOARD_SIZE):
-            for j in range_obj:
+        i_range = {
+            "down": range(self._BOARD_SIZE - 1),
+            "up": range(self._BOARD_SIZE - 1, 0, -1),
+            "left": range(self._BOARD_SIZE),
+            "right": range(self._BOARD_SIZE),
+        }[direction]
+        j_range = {
+            "down": range(self._BOARD_SIZE),
+            "up": range(self._BOARD_SIZE),
+            "left": range(self._BOARD_SIZE - 1, 0, -1),
+            "right": range(self._BOARD_SIZE - 1),
+        }[direction]
+        for i in i_range:
+            for j in j_range:
                 if (
                     self._board[i][j].get() != ""
                     and self._board[i + i_addend][j + j_addend].get() == ""
@@ -68,15 +72,32 @@ class Game:
         return "continue"
 
     def _merge(self, direction: str) -> None:
-        i_addend, j_addend = self._get_addends(direction)
-        j_addend = -j_addend
-        range_obj = (
-            range(self._BOARD_SIZE - 1, 0, -1)
-            if direction in ("down", "right")
-            else range(self._BOARD_SIZE - 1)
-        )
-        for i in range(self._BOARD_SIZE):
-            for j in range_obj:
+        i_addend = {
+            "down": 0,
+            "up": -1,
+            "left": 0,
+            "right": 0,
+        }[direction]
+        j_addend = {
+            "down": -1,
+            "up": 0,
+            "left": 1,
+            "right": -1,
+        }[direction]
+        i_range = {
+            "down": range(self._BOARD_SIZE - 1, 0, -1),
+            "up": range(self._BOARD_SIZE - 1),
+            "left": range(self._BOARD_SIZE),
+            "right": range(self._BOARD_SIZE),
+        }[direction]
+        j_range = {
+            "down": range(self._BOARD_SIZE),
+            "up": range(self._BOARD_SIZE),
+            "left": range(self._BOARD_SIZE - 1),
+            "right": range(self._BOARD_SIZE - 1, 0, -1),
+        }[direction]
+        for i in i_range:
+            for j in j_range:
                 if (
                     self._board[i][j].get() != ""
                     and self._board[i + i_addend][j + j_addend].get() != ""
