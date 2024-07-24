@@ -25,8 +25,118 @@ class Game:
     }
     _FG_COLOR = "#000000"
 
+    @staticmethod
+    def _get_addends(direction: str) -> tuple[int, int]:
+        return {
+            "down": 1,
+            "up": -1,
+            "left": 0,
+            "right": 0,
+        }[direction], {
+            "down": 0,
+            "up": 0,
+            "left": -1,
+            "right": 1,
+        }[direction]
+
+    def _compress(self, direction: str) -> None:
+        i_addend, j_addend = self._get_addends(direction)
+        range_obj = (
+            range(self._BOARD_SIZE - 1, 0, -1)
+            if direction in ("up", "left")
+            else range(self._BOARD_SIZE - 1)
+        )
+        for j in range(self._BOARD_SIZE):
+            for i in range_obj:
+                if (
+                    self._board[i][j].get() != ""
+                    and self._board[i + i_addend][j + j_addend].get() == ""
+                ):
+                    self._board[i + i_addend][j + j_addend].set(self._board[i][j].get())
+                    self._board[i][j].set("")
+
+    def _check_win(self) -> str:
+        amount_empty = 0
+        for i in range(self._BOARD_SIZE):
+            for j in range(self._BOARD_SIZE):
+                if self._board[i][j].get() == "2048":
+                    return "You win!"
+                if self._board[i][j].get() == "":
+                    amount_empty += 1
+        if amount_empty == 0:
+            return "You lose!"
+        return "continue"
+
+    def _merge(self, direction: str) -> None:
+        i_addend, j_addend = self._get_addends(direction)
+        j_addend = - j_addend
+        if direction == "up":
+            for j in range(4):
+                for i in range(3):
+                    if (
+                        self._board[i][j].get() != ""
+                        and self._board[i + 1][j].get() != ""
+                        and self._board[i][j].get() == self._board[i + 1][j].get()
+                    ):
+                        self._board[i][j].set(int(self._board[i][j].get()) * 2)
+                        self._board[i + 1][j].set("")
+        elif direction == "down":
+            for j in range(4):
+                for i in range(3, 0, -1):
+                    if (
+                        self._board[i][j].get() != ""
+                        and self._board[i - 1][j].get() != ""
+                        and self._board[i][j].get() == self._board[i - 1][j].get()
+                    ):
+                        self._board[i][j].set(int(self._board[i][j].get()) * 2)
+                        self._board[i - 1][j].set("")
+        elif direction == "left":
+            for i in range(4):
+                for j in range(3):
+                    if (
+                        self._board[i][j].get() != ""
+                        and self._board[i][j + 1].get() != ""
+                        and self._board[i][j].get() == self._board[i][j + 1].get()
+                    ):
+                        self._board[i][j].set(int(self._board[i][j].get()) * 2)
+                        self._board[i][j + 1].set("")
+        elif direction == "right":
+            for i in range(4):
+                for j in range(3, 0, -1):
+                    if (
+                        self._board[i][j].get() != ""
+                        and self._board[i][j - 1].get() != ""
+                        and self._board[i][j].get() == self._board[i][j - 1].get()
+                    ):
+                        self._board[i][j].set(int(self._board[i][j].get()) * 2)
+                        self._board[i][j - 1].set("")
+
     def _move(self, direction: Event) -> None:
-        raise NotImplementedError("move")
+        direction = direction.keycode
+        if direction in (38, 87, 111):
+            direction = "up"
+        elif direction in (40, 83, 116):
+            direction = "down"
+        elif direction in (37, 65, 113):
+            direction = "left"
+        elif direction in (39, 68, 114):
+            direction = "right"
+        self._spawn_random()
+        self._compress(direction)
+        self._merge(direction)
+        self._compress(direction)
+        self._color_board()
+        message = self._check_win()
+        if message == "continue":
+            return
+        if messagebox.askyesno(title=message, message="Do you want to play again?"):
+            for i in range(self._BOARD_SIZE):
+                for j in range(self._BOARD_SIZE):
+                    self._board[i][j].set("")
+            return
+        self._root.destroy()
+        # TODO: is this line necessary?
+        # exit()
 
     def _init_tk(self) -> None:
         self._root.title("2048")
