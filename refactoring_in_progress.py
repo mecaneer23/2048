@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """2048 game using tkinter"""
 
-from dataclasses import astuple, dataclass
+from dataclasses import dataclass
 from enum import Enum
 from random import choice, choices
 from tkinter import Event, StringVar, Tk, messagebox, ttk
-from typing import cast
 
 
 class Direction(Enum):
     """Enum to store which movement key was most recently pressed"""
+
     DOWN = "down"
     UP = "up"
     LEFT = "left"
@@ -18,12 +18,11 @@ class Direction(Enum):
 
 
 @dataclass
-class DirectionData:
+class RangeData:
     """Hold data based on given directions"""
+
     i_range: range
     j_range: range
-    i_addend: int
-    j_addend: int
 
 
 class Game:
@@ -45,72 +44,27 @@ class Game:
         "2048": "#edc22e",
     }
     _FG_COLOR = "#000000"
-    _compress_table = {
-        Direction.DOWN: DirectionData(
-            range(_BOARD_SIZE - 1),
-            range(_BOARD_SIZE),
-            1,
-            0,
-        ),
-        Direction.UP: DirectionData(
-            range(_BOARD_SIZE - 1, 0, -1),
-            range(_BOARD_SIZE),
-            -1,
-            0,
-        ),
-        Direction.RIGHT: DirectionData(
-            range(_BOARD_SIZE),
-            range(_BOARD_SIZE - 1),
-            0,
-            1,
-        ),
-        Direction.LEFT: DirectionData(
-            range(_BOARD_SIZE),
-            range(_BOARD_SIZE - 1, 0, -1),
-            0,
-            -1,
-        ),
-    }
-    _merge_table = {
-        Direction.UP: DirectionData(
-            range(_BOARD_SIZE),
-            range(_BOARD_SIZE - 1),
-            1,
-            0,
-        ),
-        Direction.DOWN: DirectionData(
-            range(_BOARD_SIZE),
-            range(_BOARD_SIZE - 1, 0, -1),
-            -1,
-            0,
-        ),
-        Direction.LEFT: DirectionData(
-            range(_BOARD_SIZE),
-            range(_BOARD_SIZE - 1),
-            0,
-            1,
-        ),
-        Direction.RIGHT: DirectionData(
-            range(_BOARD_SIZE),
-            range(_BOARD_SIZE - 1, 0, -1),
-            0,
-            -1,
-        ),
+    _RANGE_DATA = {
+        Direction.UP: RangeData(range(1, _BOARD_SIZE), range(_BOARD_SIZE)),
+        Direction.DOWN: RangeData(range(_BOARD_SIZE - 2, -1, -1), range(_BOARD_SIZE)),
+        Direction.LEFT: RangeData(range(_BOARD_SIZE), range(1, _BOARD_SIZE)),
+        Direction.RIGHT: RangeData(range(_BOARD_SIZE), range(_BOARD_SIZE - 2, -1, -1)),
     }
 
-    def _compress(self, direction: Direction) -> None:
-        i_range, j_range, i_addend, j_addend = cast(
-            tuple[range, range, int, int],
-            astuple(self._compress_table[direction]),
-        )
-        for i in i_range:
-            for j in j_range:
+    def _merge(self, direction: Direction) -> None:
+        i_addend = int(direction == Direction.DOWN) - int(direction == Direction.UP)
+        j_addend = int(direction == Direction.RIGHT) - int(direction == Direction.LEFT)
+        range_data = self._RANGE_DATA[direction]
+        for i in range_data.i_range:
+            for j in range_data.j_range:
                 if (
                     self._board[i][j].get() != ""
-                    and self._board[i + i_addend][j + j_addend].get() == ""
+                    and self._board[i + i_addend][j + j_addend].get() != ""
+                    and self._board[i][j].get()
+                    == self._board[i + i_addend][j + j_addend].get()
                 ):
-                    self._board[i + i_addend][j + j_addend].set(self._board[i][j].get())
-                    self._board[i][j].set("")
+                    self._board[i][j].set(str(int(self._board[i][j].get()) * 2))
+                    self._board[i + i_addend][j + j_addend].set("")
 
     def _check_win(self) -> str:
         amount_empty = 0
@@ -124,21 +78,19 @@ class Game:
             return "You lose!"
         return "continue"
 
-    def _merge(self, direction: Direction) -> None:
-        i_range, j_range, i_addend, j_addend = cast(
-            tuple[range, range, int, int],
-            astuple(self._merge_table[direction]),
-        )
-        for i in i_range:
-            for j in j_range:
-                if (
-                    self._board[i][j].get() != ""
-                    and self._board[i + i_addend][j + j_addend].get() != ""
-                    and self._board[i][j].get()
-                    == self._board[i + i_addend][j + j_addend].get()
-                ):
-                    self._board[i][j].set(str(int(self._board[i][j].get()) * 2))
-                    self._board[i + i_addend][j + j_addend].set("")
+    def _compress(self, direction: Direction) -> None:
+        i_addend = int(direction == Direction.DOWN) - int(direction == Direction.UP)
+        j_addend = int(direction == Direction.RIGHT) - int(direction == Direction.LEFT)
+        range_data = self._RANGE_DATA[direction]
+        # TODO: iterate in the opposite direction so each element isn't checked twice
+        for _ in range(3):  # hack to ensure elements are moved over all the way
+            for i in range_data.i_range:
+                for j in range_data.j_range:
+                    current_elem = self._board[i][j]
+                    check_elem = self._board[i + i_addend][j + j_addend]
+                    if current_elem.get() != "" and check_elem.get() == "":
+                        check_elem.set(current_elem.get())
+                        current_elem.set("")
 
     def _move(self, key: Event) -> None:
         key_symbol = key.keysym
