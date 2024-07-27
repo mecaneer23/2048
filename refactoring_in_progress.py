@@ -94,6 +94,14 @@ class Game:
                         check_elem.set(current_elem.get())
                         current_elem.set("")
 
+    def _reset_board(self) -> None:
+        for i in range(self._BOARD_SIZE):
+            for j in range(self._BOARD_SIZE):
+                self._board[i][j].set("")
+        self._spawn_random()
+        self._spawn_random()
+        self._color_board()
+
     def _move(self, key: Event) -> None:
         key_symbol = key.keysym
         direction = Direction.NONE
@@ -116,9 +124,7 @@ class Game:
         if message == "continue":
             return
         if messagebox.askyesno(title=message, message="Do you want to play again?"):
-            for i in range(self._BOARD_SIZE):
-                for j in range(self._BOARD_SIZE):
-                    self._board[i][j].set("")
+            self._reset_board()
             return
         self._root.destroy()
 
@@ -186,9 +192,7 @@ class Game:
 
     def run(self) -> None:
         """Start 2048 game"""
-        self._spawn_random()
-        self._spawn_random()
-        self._color_board()
+        self._reset_board()
         self._root.mainloop()
 
 
