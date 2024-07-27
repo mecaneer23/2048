@@ -83,7 +83,7 @@ class Game:
         j_addend = int(direction == Direction.RIGHT) - int(direction == Direction.LEFT)
         range_data = self._RANGE_DATA[direction]
         # TODO: iterate in the opposite direction so each element isn't checked twice
-        for _ in range(3):  # hack to ensure elements are moved over all the way
+        for _ in range(self._BOARD_SIZE - 1):  # hack to ensure elements are moved over all the way
             for i in range_data.i_range:
                 for j in range_data.j_range:
                     current_elem = self._board[i][j]
@@ -176,8 +176,8 @@ class Game:
         self._board[cell[0]][cell[1]].set(number)
 
     def _color_board(self) -> None:
-        for i in range(4):
-            for j in range(4):
+        for i in range(self._BOARD_SIZE):
+            for j in range(self._BOARD_SIZE):
                 ttk.Style().configure(
                     f"{i}{j}.TLabel",
                     background=self._COLORS[self._board[i][j].get()],
