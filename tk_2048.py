@@ -1,174 +1,210 @@
 #!/usr/bin/env python3
+"""2048 game using tkinter"""
 
-from tkinter import Tk, ttk, StringVar, messagebox
-import random
+from dataclasses import dataclass
+from enum import Enum
+from random import choice, choices
+from tkinter import Event, StringVar, Tk, messagebox, ttk
 
 
-def main():
-    def move(direction):
-        direction = direction.keycode
-        if direction in (38, 87, 111):
-            direction = "up"
-        elif direction in (40, 83, 116):
-            direction = "down"
-        elif direction in (37, 65, 113):
-            direction = "left"
-        elif direction in (39, 68, 114):
-            direction = "right"
-        spawn_random()
-        compress(direction)
-        merge(direction)
-        compress(direction)
-        color_board()
-        message = check_win()
-        if message != "continue":
-            if messagebox.askyesno(title=message, message="Do you want to play again?"):
-                for i in range(4):
-                    for j in range(4):
-                        vars[i][j].set("")
-            else:
-                root.destroy()
-                exit()
+class Direction(Enum):
+    """Enum to store which movement key was most recently pressed"""
 
-    root = Tk()
-    root.title("2048")
-    root.bind("<Up>", move)
-    root.bind("<Down>", move)
-    root.bind("<Left>", move)
-    root.bind("<Right>", move)
-    root.bind("w", move)
-    root.bind("s", move)
-    root.bind("a", move)
-    root.bind("d", move)
-    root.bind("m", lambda x: vars[0][0].set("2048"))
+    DOWN = "down"
+    UP = "up"
+    LEFT = "left"
+    RIGHT = "right"
+    NONE = ""
 
-    vars = [[StringVar(root) for _ in range(4)] for _ in range(4)]
-    ttk.Style().configure(
-        "TLabel",
-        font=("Helvetica", 64),
-        width=3,
-        height=3,
-        borderwidth=1,
-        relief="ridge",
-    )
-    [
-        [
-            ttk.Label(root, textvariable=vars[i][j], padding=5, style=f"{i}{j}.TLabel").grid(row=i, column=j)
-            for j in range(4)
-        ]
-        for i in range(4)
-    ]
 
-    def spawn_random():
-        number = random.choice([2, 2, 2, 2, 2, 2, 2, 2, 2, 4])
-        cell = random.choice(
-            [(i, j) for i in range(4) for j in range(4) if vars[i][j].get() == ""]
+@dataclass
+class RangeData:
+    """Hold data based on given directions"""
+
+    i_range: range
+    j_range: range
+
+
+class Game:
+    """2048 game"""
+
+    _BOARD_SIZE = 4
+    _COLORS = {
+        "": "#ffffff",
+        "2": "#eee4da",
+        "4": "#ede0c8",
+        "8": "#f2b179",
+        "16": "#f59563",
+        "32": "#f67c5f",
+        "64": "#f65e3b",
+        "128": "#edcf72",
+        "256": "#edcc61",
+        "512": "#edc850",
+        "1024": "#edc53f",
+        "2048": "#edc22e",
+    }
+    _FG_COLOR = "#000000"
+    _RANGE_DATA = {
+        Direction.UP: RangeData(range(1, _BOARD_SIZE), range(_BOARD_SIZE)),
+        Direction.DOWN: RangeData(range(_BOARD_SIZE - 2, -1, -1), range(_BOARD_SIZE)),
+        Direction.LEFT: RangeData(range(_BOARD_SIZE), range(1, _BOARD_SIZE)),
+        Direction.RIGHT: RangeData(range(_BOARD_SIZE), range(_BOARD_SIZE - 2, -1, -1)),
+    }
+
+    def _merge(self, direction: Direction) -> None:
+        i_addend = int(direction == Direction.DOWN) - int(direction == Direction.UP)
+        j_addend = int(direction == Direction.RIGHT) - int(direction == Direction.LEFT)
+        range_data = self._RANGE_DATA[direction]
+        for i in range_data.i_range:
+            for j in range_data.j_range:
+                if (
+                    self._board[i][j].get() != ""
+                    and self._board[i + i_addend][j + j_addend].get() != ""
+                    and self._board[i][j].get()
+                    == self._board[i + i_addend][j + j_addend].get()
+                ):
+                    self._board[i][j].set(str(int(self._board[i][j].get()) * 2))
+                    self._board[i + i_addend][j + j_addend].set("")
+
+    def _is_same_as_neighbor(self, row: int, col: int) -> bool:
+        item = self._board[row][col].get()
+        return (
+            (row > 0 and item == self._board[row - 1][col].get())
+            or (row < self._BOARD_SIZE - 1 and item == self._board[row + 1][col].get())
+            or (col > 0 and item == self._board[row][col - 1].get())
+            or (col < self._BOARD_SIZE - 1 and item == self._board[row][col + 1].get())
         )
-        vars[cell[0]][cell[1]].set(number)
 
-    def compress(direction):
-        if direction == "down":
-            for j in range(4):
-                for i in range(3):
-                    if vars[i][j].get() != "" and vars[i + 1][j].get() == "":
-                        vars[i + 1][j].set(vars[i][j].get())
-                        vars[i][j].set("")
-        elif direction == "up":
-            for j in range(4):
-                for i in range(3, 0, -1):
-                    if vars[i][j].get() != "" and vars[i - 1][j].get() == "":
-                        vars[i - 1][j].set(vars[i][j].get())
-                        vars[i][j].set("")
-        elif direction == "right":
-            for i in range(4):
-                for j in range(3):
-                    if vars[i][j].get() != "" and vars[i][j + 1].get() == "":
-                        vars[i][j + 1].set(vars[i][j].get())
-                        vars[i][j].set("")
-        elif direction == "left":
-            for i in range(4):
-                for j in range(3, 0, -1):
-                    if vars[i][j].get() != "" and vars[i][j - 1].get() == "":
-                        vars[i][j - 1].set(vars[i][j].get())
-                        vars[i][j].set("")
-
-    def merge(direction):
-        if direction == "up":
-            for j in range(4):
-                for i in range(3):
-                    if (
-                        vars[i][j].get() != ""
-                        and vars[i + 1][j].get() != ""
-                        and vars[i][j].get() == vars[i + 1][j].get()
-                    ):
-                        vars[i][j].set(int(vars[i][j].get()) * 2)
-                        vars[i + 1][j].set("")
-        elif direction == "down":
-            for j in range(4):
-                for i in range(3, 0, -1):
-                    if (
-                        vars[i][j].get() != ""
-                        and vars[i - 1][j].get() != ""
-                        and vars[i][j].get() == vars[i - 1][j].get()
-                    ):
-                        vars[i][j].set(int(vars[i][j].get()) * 2)
-                        vars[i - 1][j].set("")
-        elif direction == "left":
-            for i in range(4):
-                for j in range(3):
-                    if (
-                        vars[i][j].get() != ""
-                        and vars[i][j + 1].get() != ""
-                        and vars[i][j].get() == vars[i][j + 1].get()
-                    ):
-                        vars[i][j].set(int(vars[i][j].get()) * 2)
-                        vars[i][j + 1].set("")
-        elif direction == "right":
-            for i in range(4):
-                for j in range(3, 0, -1):
-                    if (
-                        vars[i][j].get() != ""
-                        and vars[i][j - 1].get() != ""
-                        and vars[i][j].get() == vars[i][j - 1].get()
-                    ):
-                        vars[i][j].set(int(vars[i][j].get()) * 2)
-                        vars[i][j - 1].set("")
-
-    def check_win():
-        for i in range(4):
-            for j in range(4):
-                if vars[i][j].get() == "2048":
+    def _check_win(self) -> str:
+        game_over = True
+        for i in range(self._BOARD_SIZE):
+            for j in range(self._BOARD_SIZE):
+                if self._board[i][j].get() == "2048":
                     return "You win!"
-        if all(vars[i][j].get() for i in range(4) for j in range(4)):
+                if self._board[i][j].get() == "" or self._is_same_as_neighbor(i, j):
+                    game_over = False
+        if game_over:
             return "You lose!"
         return "continue"
 
-    def color_board():
-        for i in range(4):
-            for j in range(4):
+    def _compress(self, direction: Direction) -> None:
+        i_addend = int(direction == Direction.DOWN) - int(direction == Direction.UP)
+        j_addend = int(direction == Direction.RIGHT) - int(direction == Direction.LEFT)
+        range_data = self._RANGE_DATA[direction]
+        # TODO: iterate in the opposite direction so each element isn't checked twice
+        for _ in range(
+            self._BOARD_SIZE - 1
+        ):  # hack to ensure elements are moved over all the way
+            for i in range_data.i_range:
+                for j in range_data.j_range:
+                    current_elem = self._board[i][j]
+                    check_elem = self._board[i + i_addend][j + j_addend]
+                    if current_elem.get() != "" and check_elem.get() == "":
+                        check_elem.set(current_elem.get())
+                        current_elem.set("")
+
+    def _reset_board(self) -> None:
+        for i in range(self._BOARD_SIZE):
+            for j in range(self._BOARD_SIZE):
+                self._board[i][j].set("")
+        self._spawn_random()
+        self._spawn_random()
+        self._color_board()
+
+    def _move(self, key: Event) -> None:
+        key_symbol = key.keysym
+        direction = Direction.NONE
+        if key_symbol in ("Up", "w"):
+            direction = Direction.UP
+        elif key_symbol in ("Down", "s"):
+            direction = Direction.DOWN
+        elif key_symbol in ("Left", "a"):
+            direction = Direction.LEFT
+        elif key_symbol in ("Right", "d"):
+            direction = Direction.RIGHT
+        if direction == Direction.NONE:
+            return
+        self._compress(direction)
+        self._merge(direction)
+        self._compress(direction)
+        self._spawn_random()
+        self._color_board()
+        message = self._check_win()
+        if message == "continue":
+            return
+        if messagebox.askyesno(title=message, message="Do you want to play again?"):
+            self._reset_board()
+            return
+        self._root.destroy()
+
+    def _end_win(self, _) -> None:
+        self._root.destroy()
+
+    def _init_tk(self) -> None:
+        self._root.title("2048")
+        self._root.bind("<Up>", self._move)
+        self._root.bind("<Down>", self._move)
+        self._root.bind("<Left>", self._move)
+        self._root.bind("<Right>", self._move)
+        self._root.bind("w", self._move)
+        self._root.bind("s", self._move)
+        self._root.bind("a", self._move)
+        self._root.bind("d", self._move)
+        self._root.bind("q", self._end_win)
+        ttk.Style().configure(
+            "TLabel",
+            font=("Helvetica", 64),
+            width=3,
+            height=3,
+            borderwidth=1,
+            relief="ridge",
+        )
+
+    def __init__(self) -> None:
+        self._root = Tk()
+        self._init_tk()
+        self._board: list[list[StringVar]] = []
+        for i in range(self._BOARD_SIZE):
+            self._board.append([])
+            for j in range(self._BOARD_SIZE):
+                self._board[i].append(StringVar(self._root))
+                ttk.Label(
+                    self._root,
+                    textvariable=self._board[i][j],
+                    padding=5,
+                    style=f"{i}{j}.TLabel",
+                ).grid(
+                    row=i,
+                    column=j,
+                )
+
+    def _spawn_random(self) -> None:
+        number = choices("24", (0.9, 0.1))[0]
+        empty_cells = [
+            (i, j)
+            for i in range(self._BOARD_SIZE)
+            for j in range(self._BOARD_SIZE)
+            if self._board[i][j].get() == ""
+        ]
+        if len(empty_cells) == 0:
+            return
+        cell = choice(empty_cells)
+        self._board[cell[0]][cell[1]].set(number)
+
+    def _color_board(self) -> None:
+        for i in range(self._BOARD_SIZE):
+            for j in range(self._BOARD_SIZE):
                 ttk.Style().configure(
                     f"{i}{j}.TLabel",
-                    background={
-                        "": "#ffffff",
-                        "2": "#eee4da",
-                        "4": "#ede0c8",
-                        "8": "#f2b179",
-                        "16": "#f59563",
-                        "32": "#f67c5f",
-                        "64": "#f65e3b",
-                        "128": "#edcf72",
-                        "256": "#edcc61",
-                        "512": "#edc850",
-                        "1024": "#edc53f",
-                        "2048": "#edc22e"
-                    }[vars[i][j].get()],
-                    foreground="#000000")
+                    background=self._COLORS[self._board[i][j].get()],
+                    foreground=self._FG_COLOR,
+                )
 
-    spawn_random()
-    spawn_random()
-    color_board()
-    root.mainloop()
+    def run(self) -> None:
+        """Start 2048 game"""
+        self._reset_board()
+        self._root.mainloop()
 
 
 if __name__ == "__main__":
-    main()
+    Game().run()
