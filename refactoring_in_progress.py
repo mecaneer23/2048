@@ -66,15 +66,24 @@ class Game:
                     self._board[i][j].set(str(int(self._board[i][j].get()) * 2))
                     self._board[i + i_addend][j + j_addend].set("")
 
+    def _is_same_as_neighbor(self, row: int, col: int) -> bool:
+        item = self._board[row][col].get()
+        return (
+            (row > 0 and item == self._board[row - 1][col].get())
+            or (row < self._BOARD_SIZE - 1 and item == self._board[row + 1][col].get())
+            or (col > 0 and item == self._board[row][col - 1].get())
+            or (col < self._BOARD_SIZE - 1 and item == self._board[row][col + 1].get())
+        )
+
     def _check_win(self) -> str:
-        amount_empty = 0
+        game_over = True
         for i in range(self._BOARD_SIZE):
             for j in range(self._BOARD_SIZE):
                 if self._board[i][j].get() == "2048":
                     return "You win!"
-                if self._board[i][j].get() == "":
-                    amount_empty += 1
-        if amount_empty == 0:
+                if self._board[i][j].get() == "" or self._is_same_as_neighbor(i, j):
+                    game_over = False
+        if game_over:
             return "You lose!"
         return "continue"
 
@@ -171,14 +180,15 @@ class Game:
 
     def _spawn_random(self) -> None:
         number = choices("24", (0.9, 0.1))[0]
-        cell = choice(
-            [
-                (i, j)
-                for i in range(self._BOARD_SIZE)
-                for j in range(self._BOARD_SIZE)
-                if self._board[i][j].get() == ""
-            ]
-        )
+        empty_cells = [
+            (i, j)
+            for i in range(self._BOARD_SIZE)
+            for j in range(self._BOARD_SIZE)
+            if self._board[i][j].get() == ""
+        ]
+        if len(empty_cells) == 0:
+            return
+        cell = choice(empty_cells)
         self._board[cell[0]][cell[1]].set(number)
 
     def _color_board(self) -> None:
