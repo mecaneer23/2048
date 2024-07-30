@@ -137,9 +137,6 @@ class Game:
             return
         self._root.destroy()
 
-    def _end_win(self, _) -> None:
-        self._root.destroy()
-
     def _init_tk(self) -> None:
         self._root.title("2048")
         self._root.bind("<Up>", self._move)
@@ -150,7 +147,7 @@ class Game:
         self._root.bind("s", self._move)
         self._root.bind("a", self._move)
         self._root.bind("d", self._move)
-        self._root.bind("q", self._end_win)
+        self._root.bind("q", lambda _: self._root.destroy())
         ttk.Style().configure(
             "TLabel",
             font=("Helvetica", 64),
