@@ -44,17 +44,28 @@ class Game:
         "2048": "#edc22e",
     }
     _FG_COLOR = "#000000"
-    _RANGE_DATA = {
-        Direction.UP: RangeData(range(1, _BOARD_SIZE), range(_BOARD_SIZE)),
-        Direction.DOWN: RangeData(range(_BOARD_SIZE - 2, -1, -1), range(_BOARD_SIZE)),
-        Direction.LEFT: RangeData(range(_BOARD_SIZE), range(1, _BOARD_SIZE)),
-        Direction.RIGHT: RangeData(range(_BOARD_SIZE), range(_BOARD_SIZE - 2, -1, -1)),
-    }
 
     def _merge(self, direction: Direction) -> None:
         i_addend = int(direction == Direction.DOWN) - int(direction == Direction.UP)
         j_addend = int(direction == Direction.RIGHT) - int(direction == Direction.LEFT)
-        range_data = self._RANGE_DATA[direction]
+        range_data = {
+            Direction.UP: RangeData(
+                range(1, self._BOARD_SIZE),
+                range(self._BOARD_SIZE),
+            ),
+            Direction.DOWN: RangeData(
+                range(self._BOARD_SIZE - 2, -1, -1),
+                range(self._BOARD_SIZE),
+            ),
+            Direction.LEFT: RangeData(
+                range(self._BOARD_SIZE),
+                range(1, self._BOARD_SIZE),
+            ),
+            Direction.RIGHT: RangeData(
+                range(self._BOARD_SIZE),
+                range(self._BOARD_SIZE - 2, -1, -1),
+            ),
+        }[direction]
         for i in range_data.i_range:
             for j in range_data.j_range:
                 if (
@@ -88,20 +99,26 @@ class Game:
         return "continue"
 
     def _compress(self, direction: Direction) -> None:
-        i_addend = int(direction == Direction.DOWN) - int(direction == Direction.UP)
-        j_addend = int(direction == Direction.RIGHT) - int(direction == Direction.LEFT)
-        range_data = self._RANGE_DATA[direction]
-        # TODO: iterate in the opposite direction so each element isn't checked twice
-        for _ in range(
-            self._BOARD_SIZE - 1
-        ):  # hack to ensure elements are moved over all the way
-            for i in range_data.i_range:
-                for j in range_data.j_range:
-                    current_elem = self._board[i][j]
-                    check_elem = self._board[i + i_addend][j + j_addend]
-                    if current_elem.get() != "" and check_elem.get() == "":
-                        check_elem.set(current_elem.get())
-                        current_elem.set("")
+        is_horizontal_direction = direction in (Direction.LEFT, Direction.RIGHT)
+
+        for line in range(self._BOARD_SIZE):
+            for swap in (
+                (1, 2),
+                (0, 1),
+                (2, 3),
+                (1, 2),
+                (0, 1),
+            ):
+                current_row = line if is_horizontal_direction else swap[direction == Direction.UP]
+                check_row = line if is_horizontal_direction else swap[direction == Direction.DOWN]
+                current_col = swap[direction == Direction.LEFT] if is_horizontal_direction else line
+                check_col = swap[direction == Direction.RIGHT] if is_horizontal_direction else line
+
+                current_elem = self._board[current_row][current_col]
+                check_elem = self._board[check_row][check_col]
+                if current_elem.get() != "" and check_elem.get() == "":
+                    check_elem.set(current_elem.get())
+                    current_elem.set("")
 
     def _reset_board(self) -> None:
         for i in range(self._BOARD_SIZE):
