@@ -3,6 +3,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
+from functools import cache
 from random import choice, choices
 from tkinter import Event, StringVar, Tk, messagebox, ttk
 
@@ -98,9 +99,39 @@ class Game:
             return "You lose!"
         return "continue"
 
-    def _compress(self, direction: Direction) -> None:
-        is_horizontal_direction = direction in (Direction.LEFT, Direction.RIGHT)
+    @cache
+    @staticmethod
+    def _replace_nones(potential_none: int | None, index: int) -> int:
+        """If `potential_none` is None, return `index`, otherwise `potential_none`"""
+        if potential_none is None:
+            return index
+        return potential_none
 
+    @cache
+    @staticmethod
+    def _get_swappable_coordinates(
+        direction: Direction, swap_pair: tuple[int, int]
+    ) -> tuple[int | None, int | None, int | None, int | None]:
+        """
+        Return a 4-tuple of (current row, current column, check row, check column),
+        where `current` refers to the location of an element and `check` refers to
+        a potentially empty element to swap it with
+        """
+        if direction in (Direction.LEFT, Direction.RIGHT):
+            return (
+                None,
+                swap_pair[direction == Direction.LEFT],
+                None,
+                swap_pair[direction == Direction.RIGHT],
+            )
+        return (
+            swap_pair[direction == Direction.UP],
+            None,
+            swap_pair[direction == Direction.DOWN],
+            None,
+        )
+
+    def _compress(self, direction: Direction) -> None:
         for line in range(self._BOARD_SIZE):
             for swap in (
                 (1, 2),
@@ -109,13 +140,15 @@ class Game:
                 (1, 2),
                 (0, 1),
             ):
-                current_row = line if is_horizontal_direction else swap[direction == Direction.UP]
-                check_row = line if is_horizontal_direction else swap[direction == Direction.DOWN]
-                current_col = swap[direction == Direction.LEFT] if is_horizontal_direction else line
-                check_col = swap[direction == Direction.RIGHT] if is_horizontal_direction else line
-
-                current_elem = self._board[current_row][current_col]
-                check_elem = self._board[check_row][check_col]
+                current_row, current_col, check_row, check_col = (
+                    Game._get_swappable_coordinates(direction, swap)
+                )
+                current_elem = self._board[Game._replace_nones(current_row, line)][
+                    Game._replace_nones(current_col, line)
+                ]
+                check_elem = self._board[Game._replace_nones(check_row, line)][
+                    Game._replace_nones(check_col, line)
+                ]
                 if current_elem.get() != "" and check_elem.get() == "":
                     check_elem.set(current_elem.get())
                     current_elem.set("")
