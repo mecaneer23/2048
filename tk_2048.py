@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import cache
 from random import choice, choices
-from tkinter import Event, StringVar, Tk, messagebox, ttk
+from tkinter import Event, Misc, StringVar, Tk, messagebox, ttk
 
 
 class Direction(Enum):
@@ -161,7 +161,7 @@ class Game:
         self._spawn_random()
         self._color_board()
 
-    def _move(self, key: Event) -> None:
+    def _move(self, key: Event[Misc]) -> None:
         key_symbol = key.keysym
         direction = Direction.NONE
         if key_symbol in ("Up", "w"):
